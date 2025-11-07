@@ -90,4 +90,7 @@ Integrar envío de reportes por correo electrónico.
 
 Implementar promedios por curso o materia.
 
-Crear versión web o móvil.
+Crear versión web o móvil. 
+
+<img width="1124" height="705" alt="image" src="https://github.com/user-attachments/assets/df3ebd34-bb6b-4843-8591-b5babb9c3a1e" />
+
