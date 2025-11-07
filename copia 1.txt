@@ -1,0 +1,131 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+import pandas as pd
+import matplotlib.pyplot as plt
+
+class RegistroNotasApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Sistema de Notas Profesional")
+        self.root.geometry("1000x600")
+        self.root.configure(bg="#1e1e1e")
+
+        self.datos = []
+
+        self.titulo = tk.Label(root, text="📚 Registro de Notas", font=("Segoe UI", 20, "bold"), bg="#1e1e1e", fg="#00bfff")
+        self.titulo.pack(pady=10)
+
+        # ================= FORMULARIO =================
+        form_frame = tk.Frame(root, bg="#1e1e1e")
+        form_frame.pack(pady=5)
+
+        tk.Label(form_frame, text="Nombre", bg="#1e1e1e", fg="white", font=("Segoe UI", 12)).grid(row=0, column=0, padx=10)
+        self.nombre_entry = tk.Entry(form_frame, font=("Segoe UI", 12))
+        self.nombre_entry.grid(row=0, column=1, padx=10)
+
+        tk.Label(form_frame, text="Nota 1", bg="#1e1e1e", fg="white", font=("Segoe UI", 12)).grid(row=1, column=0, padx=10)
+        self.nota1_entry = tk.Entry(form_frame, font=("Segoe UI", 12))
+        self.nota1_entry.grid(row=1, column=1, padx=10)
+
+        tk.Label(form_frame, text="Nota 2", bg="#1e1e1e", fg="white", font=("Segoe UI", 12)).grid(row=2, column=0, padx=10)
+        self.nota2_entry = tk.Entry(form_frame, font=("Segoe UI", 12))
+        self.nota2_entry.grid(row=2, column=1, padx=10)
+
+        tk.Button(form_frame, text="Registrar", bg="#00bfff", fg="white", font=("Segoe UI", 12), command=self.registrar).grid(row=3, column=0, columnspan=2, pady=10)
+
+        # ================ FILTRO =================
+        filtro_frame = tk.Frame(root, bg="#1e1e1e")
+        filtro_frame.pack(pady=5)
+
+        tk.Label(filtro_frame, text="🔎 Buscar:", bg="#1e1e1e", fg="white", font=("Segoe UI", 12)).pack(side=tk.LEFT, padx=5)
+        self.filtro_entry = tk.Entry(filtro_frame, font=("Segoe UI", 12))
+        self.filtro_entry.pack(side=tk.LEFT, padx=5)
+        tk.Button(filtro_frame, text="Aplicar", command=self.filtrar, bg="#3498db", fg="white", font=("Segoe UI", 11)).pack(side=tk.LEFT)
+        tk.Button(filtro_frame, text="Limpiar Filtro", command=self.actualizar_tabla, bg="#555", fg="white", font=("Segoe UI", 11)).pack(side=tk.LEFT, padx=5)
+
+        # ================ TABLA =================
+        self.tree = ttk.Treeview(root, columns=("Nombre", "Nota 1", "Nota 2", "Promedio", "Estado"), show="headings")
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor=tk.CENTER, width=150)
+
+        self.tree.pack(expand=True, fill=tk.BOTH, padx=20, pady=10)
+
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#2b2b2b", foreground="white", rowheight=25, fieldbackground="#2b2b2b", font=("Segoe UI", 10))
+        style.map("Treeview", background=[("selected", "#00bfff")])
+
+        # ================ BOTONES EXTRAS =================
+        boton_frame = tk.Frame(root, bg="#1e1e1e")
+        boton_frame.pack(pady=10)
+
+        tk.Button(boton_frame, text="📈 Ver Gráfico", command=self.ver_grafico, bg="#f39c12", fg="white", font=("Segoe UI", 11)).pack(side=tk.LEFT, padx=10)
+        tk.Button(boton_frame, text="📁 Exportar a Excel", command=self.exportar_excel, bg="#2ecc71", fg="white", font=("Segoe UI", 11)).pack(side=tk.LEFT, padx=10)
+
+    def registrar(self):
+        nombre = self.nombre_entry.get()
+        try:
+            nota1 = float(self.nota1_entry.get())
+            nota2 = float(self.nota2_entry.get())
+            promedio = round((nota1 + nota2) / 2, 2)
+            estado = "Aprobado" if promedio >= 11 else "Desaprobado"
+
+            self.datos.append([nombre, nota1, nota2, promedio, estado])
+            self.actualizar_tabla()
+
+            self.nombre_entry.delete(0, tk.END)
+            self.nota1_entry.delete(0, tk.END)
+            self.nota2_entry.delete(0, tk.END)
+        except ValueError:
+            messagebox.showerror("Error", "Por favor ingrese notas válidas.")
+
+    def actualizar_tabla(self, datos=None):
+        self.tree.delete(*self.tree.get_children())
+        lista = datos if datos else self.datos
+        for fila in lista:
+            self.tree.insert("", tk.END, values=fila, tags=("aprobado" if fila[4] == "Aprobado" else "desaprobado"))
+        self.tree.tag_configure("aprobado", foreground="deepskyblue")
+        self.tree.tag_configure("desaprobado", foreground="red")
+
+    def filtrar(self):
+        texto = self.filtro_entry.get().strip().lower()
+        if not texto:
+            self.actualizar_tabla()
+            return
+        filtrado = [fila for fila in self.datos if texto in fila[0].lower() or texto in fila[4].lower()]
+        self.actualizar_tabla(filtrado)
+
+    def exportar_excel(self):
+        if not self.datos:
+            messagebox.showwarning("Atención", "No hay datos para exportar.")
+            return
+        archivo = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel Files", "*.xlsx")])
+        if archivo:
+            df = pd.DataFrame(self.datos, columns=["Nombre", "Nota 1", "Nota 2", "Promedio", "Estado"])
+            df.to_excel(archivo, index=False)
+            messagebox.showinfo("Éxito", "Archivo exportado correctamente.")
+
+    def ver_grafico(self):
+        if not self.datos:
+            messagebox.showwarning("Sin datos", "Agrega estudiantes para ver el gráfico.")
+            return
+        nombres = [fila[0] for fila in self.datos]
+        promedios = [fila[3] for fila in self.datos]
+
+        plt.figure(figsize=(10, 5))
+        plt.bar(nombres, promedios, color=["blue" if p >= 11 else "red" for p in promedios])
+        plt.axhline(11, color="gray", linestyle="--", label="Línea de Aprobación")
+        plt.title("Promedio por Estudiante")
+        plt.ylabel("Promedio")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.legend()
+        plt.show()
+
+
+# =============== EJECUTAR =================
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = RegistroNotasApp(root)
+    root.mainloop()
